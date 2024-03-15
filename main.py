@@ -1,20 +1,25 @@
-from openpyxl import load_workbook, Workbook
+from openpyxl import load_workbook
 from openpyxl.drawing.image import Image
 import pyautogui
 import pygetwindow as gw
 import time
+import subprocess
+import json
 from extractor import *
 
-c_file = "F:/projects/compsci/mod5.c"
-screenshot_path = "F:/projects/compsci/tester/"
+with open("config.json", "r") as E:
+    config = json.load(E)
 
-workbook_path = 'C:/Users/bhave/OneDrive/Documents/test.xlsx'
+c_file = config["c_file"]
+screenshot_path = config["screenshot_path"]
+workbook_path = config["workbook_path"]
+left, top, width, height = 100, 100, 500, 500
 
 workbook = load_workbook(workbook_path)
 alphabet_dict = {i: chr(i + ord('A') - 1) for i in range(1, 27)}
 
 sheet = workbook['Sheet1']
-left, top, width, height = 100, 100, 500, 500
+
 
 class ExcelFileManagement:
     @staticmethod
@@ -58,6 +63,25 @@ class ExcelFileManagement:
     def add_results(test_type, variables, module, input_data, expected):
         ExcelFileManagement.populate_table()
         try:
+            print("Compiling C program...")
+            process = subprocess.Popen(["gcc", c_file, "-o", "output.exe"], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            _, error = process.communicate()
+            if error:
+                raise Exception(f"Compilation Error: {error.decode('utf-8')}")
+
+            print("Executing C program...")
+            process = subprocess.Popen(["output.exe"], stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            output, error = process.communicate(input=input_data.encode('utf-8'))
+            if error:
+                raise Exception(f"Execution Error: {error.decode('utf-8')}")
+
+            print("C program executed successfully.")
+            print("Output:")
+            print(output.decode("utf-8"))
+
+            print("C program executed successfully.")
+            print("Output:")
+            print(output.decode("utf-8"))
         # Find the next available row
             if sheet.max_row == 1:
                 row = sheet.max_row
@@ -75,7 +99,7 @@ class ExcelFileManagement:
             sheet.cell(row=row + 4, column=start_col).value = input_data
             
             sheet.cell(row=row + 5, column=start_col).value = expected
-            sheet.cell(row=row + 6, column=start_col).value = "Placeholder for standard out"
+            sheet.cell(row=row + 6, column=start_col).value = output.decode("utf-8")
 
             ss_path = f"{screenshot_path}{row + 7}.png"
             ScreenshotManagement.take_screenshot(ss_path)
@@ -128,8 +152,8 @@ class UserManagement:
 
 # Example usage:
 # print(alphabet_dict[sheet.max_column], sheet.max_row)
-ExcelFileManagement.add_results(test_type="normal", variables="1", module="2", input_data="3", expected="4")
 
+UserManagement.Helper.prompt()
 """
 TODO: Use STDOUT.
 """
