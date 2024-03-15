@@ -6,6 +6,7 @@ import time
 from extractor import *
 
 c_file = "F:/projects/compsci/mod5.c"
+screenshot_path = "F:/projects/compsci/tester/"
 
 workbook_path = 'C:/Users/bhave/OneDrive/Documents/test.xlsx'
 
@@ -55,6 +56,7 @@ class ExcelFileManagement:
         
     @staticmethod
     def add_results(test_type, variables, module, input_data, expected):
+        ExcelFileManagement.populate_table()
         try:
         # Find the next available row
             if sheet.max_row == 1:
@@ -72,8 +74,12 @@ class ExcelFileManagement:
             sheet.cell(row=row + 3, column=start_col).value = module
             sheet.cell(row=row + 4, column=start_col).value = input_data
             
-            sheet.cell(row=row + 5, column=start_col).value = "Placeholder for standard out"
-            sheet.cell(row=row + 6, column=start_col).value = "Placeholder for sceenshot"
+            sheet.cell(row=row + 5, column=start_col).value = expected
+            sheet.cell(row=row + 6, column=start_col).value = "Placeholder for standard out"
+
+            ss_path = f"{screenshot_path}{row + 7}.png"
+            ScreenshotManagement.take_screenshot(ss_path)
+            ExcelFileManagement.add_image_to_cell(cell_id=f"B{row + 7}", image_path=ss_path, width=100, height=100)
 
         # Save the workbook
             workbook.save(workbook_path)
@@ -98,25 +104,23 @@ class ScreenshotManagement:
         time.sleep(1)
         screenshot = pyautogui.screenshot(region=(left, top, width, height))
         screenshot.save(path_to_save)
-    
-# ScreenshotManagement.take_screenshot("C:/Users/bhave/OneDrive/Desktop/test.png")
-# ExcelFileManagement.populate_table()
-# ExcelFileManagement.add_results("main", "hello data", "nothing yet")
 
 class UserManagement:
     class Helper:
         @staticmethod
         def prompt():
             type_input = input("What type of test are you running? (Normal/Erroneous/Extreme/Incomplete)?\n> ")
+            variable_input = input("Paste the variables your code is using here\n> ")
+
             print(f"Reading file located at {c_file}")
             print("Extracting function signatures...")
             extract(c_file)
             module_input = input("Select the function you're testing from the list above (or if it is not there enter a new one)\n> ")
-            variable_input = input("Paste the variables your code is using here\n> ")
+
             input_input = input("Enter the input data:\n> ")
             expected_input = input("What do you expect this code to return?\n> ")
 
-            result = ExcelFileManagement.add_results(module=module_input, input_data=input_input, expected=expected_input)
+            result = ExcelFileManagement.add_results(test_type=type_input, variables=variable_input, module=module_input, input_data=input_input, expected=expected_input)
             if result == "Results added successfully":
                 print("Results added successfully!")
             else:
@@ -124,10 +128,8 @@ class UserManagement:
 
 # Example usage:
 # print(alphabet_dict[sheet.max_column], sheet.max_row)
-ExcelFileManagement.populate_table()
 ExcelFileManagement.add_results(test_type="normal", variables="1", module="2", input_data="3", expected="4")
 
 """
-TODO: Replace placeholders for the real
-TODO: Connect to STDOUT
+TODO: Use STDOUT.
 """
