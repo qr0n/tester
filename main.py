@@ -7,7 +7,7 @@ import subprocess
 import json
 from extractor import *
 
-with open("config.json", "r") as E:
+with open("F:/projects/compsci/tester/config.json", "r") as E:
     config = json.load(E)
 
 c_file = config["c_file"]
@@ -63,25 +63,18 @@ class ExcelFileManagement:
     def add_results(test_type, variables, module, input_data, expected):
         ExcelFileManagement.populate_table()
         try:
-            print("Compiling C program...")
+            print("compiling")
             process = subprocess.Popen(["gcc", c_file, "-o", "output.exe"], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             _, error = process.communicate()
             if error:
                 raise Exception(f"Compilation Error: {error.decode('utf-8')}")
+            print("finished compiling")
 
-            print("Executing C program...")
+            print("executing")
             process = subprocess.Popen(["output.exe"], stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             output, error = process.communicate(input=input_data.encode('utf-8'))
             if error:
                 raise Exception(f"Execution Error: {error.decode('utf-8')}")
-
-            print("C program executed successfully.")
-            print("Output:")
-            print(output.decode("utf-8"))
-
-            print("C program executed successfully.")
-            print("Output:")
-            print(output.decode("utf-8"))
         # Find the next available row
             if sheet.max_row == 1:
                 row = sheet.max_row
@@ -124,8 +117,8 @@ class ScreenshotManagement:
             
     @staticmethod
     def take_screenshot(path_to_save):
-        ScreenshotManagement.Helper.focus_window_by_title("Windows PowerShell")
-        time.sleep(1)
+        #ScreenshotManagement.Helper.focus_window_by_title("Windows PowerShell")
+        #time.sleep(1)
         screenshot = pyautogui.screenshot(region=(left, top, width, height))
         screenshot.save(path_to_save)
 
@@ -154,6 +147,3 @@ class UserManagement:
 # print(alphabet_dict[sheet.max_column], sheet.max_row)
 
 UserManagement.Helper.prompt()
-"""
-TODO: Use STDOUT.
-"""
