@@ -5,21 +5,48 @@ import pygetwindow as gw
 import time
 import subprocess
 import json
-from extractor import *
+import re
 
 with open("F:/projects/compsci/tester/config.json", "r") as E:
     config = json.load(E)
 
 c_file = config["c_file"]
-screenshot_path = config["screenshot_path"]
-workbook_path = config["workbook_path"]
-left, top, width, height = 100, 100, 500, 500
 
-workbook = load_workbook(workbook_path)
+screenshot_path = config["screenshot_path"]
+left, top, width, height = config["left"], config["top"], config["width"], config["height"]
+
 alphabet_dict = {i: chr(i + ord('A') - 1) for i in range(1, 27)}
 
+workbook_path = config["workbook_path"]
+workbook = load_workbook(workbook_path)
 sheet = workbook['Sheet1']
 
+# Function extractor (Just like extractor.py but in one file, might compile to executable later.)
+
+def extract_function_signatures(file_path):
+    with open(file_path, 'r') as file:
+        content = file.read()
+
+    # Regular expression to find all function signatures
+    pattern = re.compile(r'\b(?:\w+\s+)?(\w+\s+\w+\([^)]*\))\s*{')
+    matches = pattern.finditer(content)
+
+    # Extract function signatures
+    function_signatures = [match.group(1) for match in matches]
+
+    return function_signatures
+
+def extract(c_file_path):
+    all_function_signatures = extract_function_signatures(c_file_path)
+
+    if all_function_signatures:
+        print("All Function Signatures Found:")
+        for i, function_signature in enumerate(all_function_signatures, start=1):
+            print(f"Function {i}: {function_signature}")
+    else:
+        print("No functions found in the provided C file.")
+
+# End extractor.py
 
 class ExcelFileManagement:
     @staticmethod
@@ -96,10 +123,12 @@ class ExcelFileManagement:
 
             ss_path = f"{screenshot_path}{row + 7}.png"
             ScreenshotManagement.take_screenshot(ss_path)
+
             ExcelFileManagement.add_image_to_cell(cell_id=f"B{row + 7}", image_path=ss_path, width=100, height=100)
 
         # Save the workbook
             workbook.save(workbook_path)
+            workbook.close()
             return "Results added successfully"
         except Exception as e:
             return str(e)
@@ -117,33 +146,36 @@ class ScreenshotManagement:
             
     @staticmethod
     def take_screenshot(path_to_save):
-        #ScreenshotManagement.Helper.focus_window_by_title("Windows PowerShell")
-        #time.sleep(1)
+        ScreenshotManagement.Helper.focus_window_by_title("Windows PowerShell")
+        time.sleep(1)
         screenshot = pyautogui.screenshot(region=(left, top, width, height))
         screenshot.save(path_to_save)
 
 class UserManagement:
-    class Helper:
-        @staticmethod
-        def prompt():
-            type_input = input("What type of test are you running? (Normal/Erroneous/Extreme/Incomplete)?\n> ")
-            variable_input = input("Paste the variables your code is using here\n> ")
+    @staticmethod
+    def prompt():
+        type_input = input("What type of test are you running? (Normal/Erroneous/Extreme/Incomplete)?\n> ")
+        variable_input = input("Paste the variables your code is using here\n> ")
 
-            print(f"Reading file located at {c_file}")
-            print("Extracting function signatures...")
-            extract(c_file)
-            module_input = input("Select the function you're testing from the list above (or if it is not there enter a new one)\n> ")
+        print(f"Reading file located at {c_file}")
+        print("Extracting function signatures...")
+        extract(c_file)
+        module_input = input("Select the function you're testing from the list above (or if it is not there enter a new one)\n> ")
 
-            input_input = input("Enter the input data:\n> ")
-            expected_input = input("What do you expect this code to return?\n> ")
+        input_input = input("Enter the input data:\n> ")
+        expected_input = input("What do you expect this code to return?\n> ")
 
-            result = ExcelFileManagement.add_results(test_type=type_input, variables=variable_input, module=module_input, input_data=input_input, expected=expected_input)
-            if result == "Results added successfully":
-                print("Results added successfully!")
-            else:
-                print(f"Error: {result}")
+        result = ExcelFileManagement.add_results(test_type=type_input, variables=variable_input, module=module_input, input_data=input_input, expected=expected_input)
+        if result == "Results added successfully":
+            try:
+                UserManagement.Helper.prompt()
+            except KeyboardInterrupt as E:
+                print("Saving workbook...")
+                workbook.save(workbook_path)
+                workbook.close()
+                print("Closing file...\nExitting.")
+                exit()
+        else:
+            print(f"Error: {result}")
 
-# Example usage:
-# print(alphabet_dict[sheet.max_column], sheet.max_row)
-
-UserManagement.Helper.prompt()
+UserManagement.prompt()
